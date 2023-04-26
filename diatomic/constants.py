@@ -1,11 +1,13 @@
 import scipy.constants
 from numpy import pi
+from dataclasses import dataclass
+
 
 ###############################################################################
-# Bialkali Molecular Constants
+# Molecular Constants
+# Check up to date if precision needed!
 ###############################################################################
-#Here are some starting dictionaries for various bialkali molecules. 
-#References given, but check up to date if precision needed!
+
 
 h = scipy.constants.h
 muN = scipy.constants.physical_constants['nuclear magneton'][0]
@@ -39,101 +41,30 @@ Rb87Cs133 = {"I1":1.5,
             "a2":1997*4*pi*eps0*bohr**3, #1064nm
             "Beta":0}
 
-#K41Cs133 values are from theory:
-#Vexiau et al., Int. Rev. Phys. Chem. 36, 709-750 (2017)
-#https://www.tandfonline.com/doi/full/10.1080/0144235X.2017.1351821
-#Aldegunde et al., PRA 96, 042506 (2017)
-#https://journals.aps.org/pra/abstract/10.1103/PhysRevA.96.042506
-K41Cs133 = {"I1":1.5,
-            "I2":3.5,
-            "d0":1.84*DebyeSI,
-            "Brot":880.326e6*h,
-            "Drot":0*h,
-            "Q1":-0.221e6*h,
-            "Q2":0.075e6*h,
-            "C1":4.5*h,
-            "C2":370.8*h,
-            "C3":9.9*h,
-            "C4":628*h,
-            "MuN":0.0*muN,
-            "Mu1":0.143*(1-1340.7e-6)*muN,
-            "Mu2":0.738*(1-6337.1e-6)*muN,
-            "a0":7.783e6*h, #h*Hz/(W/cm^2)
-            "a2":0, #Not reported
-            "Beta":0}#
+@dataclass
+class MolecularConstants:
+    """ 
+    Define constants for double-sigma molecule (Hund's case (b))
+    See John Barry's thesis chapter 2.4, 2.5 for details.
+    """
 
+    NuclearSpin_I: float # nuclear spin, assume only one nucleus has non-zero spin
+    ElectronSpin_S: float # electronic spin
+    DipoleMoment_d: float # Debye, body-frame dipole moment
+    RotationalConstant_B: float # Hz, defined as E/h
+    CentrifugalDistortion_D: float # Hz, defined as E/h
+    SpinRotationalCoupling_gamma: float # Hz, defined as E/h
+    HyperfineCoupling_b: float # Hz, defined as E/h
+    SpinDipoleDipoleCoupling_c: float # Hz, defined as E/h
+    NuclearSpinRotationalCoupling_C: float # Hz, defined as E/h
 
-#For K40Rb87:
-#Brot, Q1, Q2 are from Ospelkaus et al., PRL 104, 030402 (2010)
-#https://journals.aps.org/prl/pdf/10.1103/PhysRevLett.104.030402
-#d0 is from Ni et al., Science 322, 231-235 (2008)
-#https://www.science.org/doi/10.1126/science.1163861
-#a0, a2 are from Neyenhuis et al., PRL 109, 230403 (2012)
-#https://journals.aps.org/prl/pdf/10.1103/PhysRevLett.109.230403
-#All other parameters are from Aldegunde et al., PRA 96, 042506 (2017)
-#https://journals.aps.org/pra/abstract/10.1103/PhysRevA.96.042506
-K40Rb87 = { "I1":4,
-            "I2":1.5,
-            "d0":0.566*DebyeSI,
-            "Brot":1113.950e6*h,
-            "Drot":0*h,
-            "Q1":0.45e6*h,
-            "Q2":-1.41e6*h,
-            "C1":-24.1*h,
-            "C2":419.5*h,
-            "C3":-48.2*h,
-            "C4":-2028.8*h,
-            "MuN":0.0140*muN,
-            "Mu1":-0.324*(1-1321e-6)*muN,
-            "Mu2":1.834*(1-3469e-6)*muN,
-            "a0":5.53e-5*1e6*h, #h*Hz/(W/cm^2) #1064nm
-            "a2":4.47e-5*1e6*h, #1064nm
-            "Beta":0}
-
-
-#For Na23K40
-#Parameters from Will et al., PRL 116, 225306 (2016)
-#https://journals.aps.org/prl/abstract/10.1103/PhysRevLett.116.225306
-#and from Aldegunde et al., PRA 96, 042506 (2017)
-#https://journals.aps.org/pra/abstract/10.1103/PhysRevA.96.042506
-Na23K40 = { "I1":1.5,
-            "I2":4,
-            "d0":2.72*DebyeSI,
-            "Brot":2.8217297e9*h,
-            "Drot":0*h,
-            "Q1":-0.187e6*h,
-            "Q2":0.899e6*h,
-            "C1":117.4*h,
-            "C2":-97.0*h,
-            "C3":-48.4*h,
-            "C4":-409*h,
-            "MuN":0.0253*muN,
-            "Mu1":1.477*(1-624.4e-6)*muN,
-            "Mu2":-0.324*(1-1297.4e-6)*muN,
-            "a0":0*h, #Not reported
-            "a2":0*h, #Not reported
-            "Beta":0}
-
-
-#For Na23Rb87
-#Parameters from Guo et al., PRA 97, 020501(R) (2018)
-#https://journals.aps.org/pra/abstract/10.1103/PhysRevA.97.020501
-#and from Aldegunde et al., PRA 96, 042506 (2017)
-#https://journals.aps.org/pra/abstract/10.1103/PhysRevA.96.042506
-Na23Rb87 = {"I1":1.5,
-            "I2":1.5,
-            "d0":3.2*DebyeSI,
-            "Brot":2.0896628e9*h,
-            "Drot":0*h,
-            "Q1":-0.139e6*h,
-            "Q2":-3.048e6*h,
-            "C1":60.7*h,
-            "C2":983.8*h,
-            "C3":259.3*h,
-            "C4":6.56e3*h,
-            "MuN":0.001*muN,
-            "Mu1":1.484*muN,
-            "Mu2":1.832*muN,
-            "a0":0*h, #Not reported
-            "a2":0*h, #Not reported
-            "Beta":0}
+# See John Barry's thesis chapter 2.4, 2.5 for details
+SrFConstants = MolecularConstants(NuclearSpin_I=1/2,
+                                  ElectronSpin_S=1/2,
+                                  DipoleMoment_d=3.4963,
+                                  RotationalConstant_B=7.5108318e9,
+                                  CentrifugalDistortion_D=7482.4,
+                                  SpinRotationalCoupling_gamma=75.02249e6,
+                                  HyperfineCoupling_b=97.6670e6,
+                                  SpinDipoleDipoleCoupling_c=29.846e6,
+                                  NuclearSpinRotationalCoupling_C=0.00230e6)
