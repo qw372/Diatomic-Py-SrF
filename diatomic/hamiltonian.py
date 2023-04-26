@@ -1,13 +1,12 @@
 import numpy as np
-from sympy.physics.wigner import wigner_3j
 from scipy.linalg import block_diag
-import scipy.constants
-from constants import MolecularConstants
+from .constants import MolecularConstants
 
 '''
 This module contains the main code to calculate the hyperfine structure of 
-molecules in external electric and magnetic fields. In usual circumstances most of the functions within
-are not user-oriented.
+molecules in external electric and magnetic fields. 
+
+Energies in the Hamiltonian have units of Hz (defined as E/h). 
 
 Example:
     Basic usage of this module is for accessing the eigenstates and
@@ -21,34 +20,9 @@ Example:
         $ ev,es = la.eigh(H0)
 '''
 
+__all__ = ['build_hamiltonians']
 
-###############################################################################
-# Start by definining constants that are needed for the code                  #
-###############################################################################
-
-'''
-    Important note!
-
-    Elements in the Hamiltonian have units of Hz (defined as E/h). 
-'''
-
-h = scipy.constants.h
-muN = scipy.constants.physical_constants['nuclear magneton'][0]
-bohr = scipy.constants.physical_constants['Bohr radius'][0]
-eps0 = scipy.constants.epsilon_0
-c = scipy.constants.c
-pi = np.pi
-
-DebyeSI = 3.33564e-30 # Conversion factor from debyes to J/V/m
-
-###############################################################################
-# Functions for the calculations to use                                       #
-###############################################################################
-
-# first functions are mathematical and used to generate the structures that we
-# will need to use
-
-def raising_operator(J):
+def _raising_operator(J: float) -> np.ndarray:
     ''' 
     Creates the matrix representation of angular momentum raising operator for J, in |J, mJ> basis.
     Note that this is different from spherical tensor operator J_{+1}
@@ -70,7 +44,7 @@ def raising_operator(J):
 
     return J_plus
 
-def x_operator(J):
+def _x_operator(J: float) -> np.ndarray:
     ''' 
     Creates the Cartesian operator Jx for a given J (x component of J)
 
@@ -80,11 +54,11 @@ def x_operator(J):
         Jx (numpy.ndarray) : 2J+1 square numpy array
     '''
 
-    J_plus = raising_operator(J)
+    J_plus = _raising_operator(J)
 
     return 0.5 * (J_plus + J_plus.T) # J_plus.T is lowering operator J_minus
 
-def y_operator(J):
+def _y_operator(J: float) -> np.ndarray:
     ''' 
     Creates the Cartesian operator Jy for a given J (y component of J)
 
@@ -94,11 +68,11 @@ def y_operator(J):
         Jy (numpy.ndarray) : 2J+1 square numpy array
     '''
 
-    J_plus = raising_operator(J)
+    J_plus = _raising_operator(J)
 
     return 0.5j * (J_plus.T - J_plus) # J_plus.T is lowering operator J_minus
 
-def z_operator(J):
+def _z_operator(J: float) -> np.ndarray:
     ''' 
     Creates the Cartesian operator Jz for a given J (z component of J)
 
@@ -113,7 +87,7 @@ def z_operator(J):
 
     return np.diag(np.arange(-J, J+1))
 
-def generate_vecs(Nmax, S, I):
+def _generate_vecs(Nmax: int, S: float, I: float) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
     ''' 
     Build N, S, I angular momentum vectors
 
@@ -139,10 +113,10 @@ def generate_vecs(Nmax, S, I):
     Ny = np.array([[]])
     Nz = np.array([[]])
 
-    for n in range(Nmax+1):
-        Nx = block_diag(Nx, x_operator(n))
-        Ny = block_diag(Ny, y_operator(n))
-        Nz = block_diag(Nz, z_operator(n))
+    for N in range(Nmax+1):
+        Nx = block_diag(Nx, _x_operator(N))
+        Ny = block_diag(Ny, _y_operator(N))
+        Nz = block_diag(Nz, _z_operator(N))
 
     # remove the first element of the N vectors, which is empty
     Nx = Nx[1:,:]
@@ -160,19 +134,35 @@ def generate_vecs(Nmax, S, I):
                         np.kron(Nz, np.kron(np.identity(shapeS), np.identity(shapeI)))])
 
     # we also have to repeat for the electronic and nuclear spins
-    S_vec = np.array([np.kron(np.identity(shapeN), np.kron(x_operator(S), np.identity(shapeI))),
-                        np.kron(np.identity(shapeN), np.kron(y_operator(S),np.identity(shapeI))),
-                        np.kron(np.identity(shapeN), np.kron(z_operator(S),np.identity(shapeI)))])
+    S_vec = np.array([np.kron(np.identity(shapeN), np.kron(_x_operator(S), np.identity(shapeI))),
+                        np.kron(np.identity(shapeN), np.kron(_y_operator(S),np.identity(shapeI))),
+                        np.kron(np.identity(shapeN), np.kron(_z_operator(S),np.identity(shapeI)))])
 
-    I_vec = np.array([np.kron(np.identity(shapeN), np.kron(np.identity(shapeS),x_operator(I))),
-                        np.kron(np.identity(shapeN), np.kron(np.identity(shapeS),y_operator(I))),
-                        np.kron(np.identity(shapeN), np.kron(np.identity(shapeS),z_operator(I)))])
+    I_vec = np.array([np.kron(np.identity(shapeN), np.kron(np.identity(shapeS),_x_operator(I))),
+                        np.kron(np.identity(shapeN), np.kron(np.identity(shapeS),_y_operator(I))),
+                        np.kron(np.identity(shapeN), np.kron(np.identity(shapeS),_z_operator(I)))])
+    
+    N_list = np.array([])
+    mN_list = np.array([])
+    for N in range(Nmax+1):
+        # N_list = np.array([0, 1, 1, 1, 2, 2, 2, 2, 2, ...])
+        # N_list = np.array([0, -1, 0, 1, -2, -1, 0, 1, 2, ...])
+        N_list = np.append(N_list, [N]*(2*N+1))
+        mN_list = np.append(mN_list, np.arange(-N, N+1))
 
-    return N_vec, S_vec, I_vec
+    column_N = np.tile(N_list, shapeN).reshape((shapeN, shapeN))
+    column_mN = np.tile(mN_list, shapeN).reshape((shapeN, shapeN))
+    row_N = np.repeat(N_list, shapeN).reshape((shapeN, shapeN))
+    row_mN = np.repeat(mN_list, shapeN).reshape((shapeN, shapeN))
+
+    D_minus_1 = 
+
+
+    return (N_vec, S_vec, I_vec)
 
 # From here the functions will calculate individual terms in the Hamiltonian
 
-def rotational(N_vec, Brot, Drot):
+def _rotational(N_vec: np.ndarray, Brot: float, Drot: float) -> np.ndarray:
     ''' 
     Rigid rotor rotational structure
 
@@ -195,7 +185,7 @@ def rotational(N_vec, Brot, Drot):
 
     return Brot*N_squared - Drot*N_squared_squared
 
-def spin_rotational_coupling(gamma, S_vec, N_vec):
+def _spin_rotational_coupling(gamma: float, S_vec: np.ndarray, N_vec: np.ndarray) -> np.ndarray:
     ''' 
     Calculate the spin-rotational coupling term
 
@@ -209,7 +199,7 @@ def spin_rotational_coupling(gamma, S_vec, N_vec):
 
     return gamma*np.matmul(S_vec, N_vec).sum(axis=0)
 
-def hyperfine(b, I_vec, S_vec):
+def _hyperfine(b: float, I_vec: np.ndarray, S_vec: np.ndarray) -> np.ndarray:
     ''' 
     Calculate the hyperfine term
 
@@ -223,7 +213,7 @@ def hyperfine(b, I_vec, S_vec):
 
     return b*np.matmul(I_vec, S_vec).sum(axis=0)
 
-def spin_dipole_dipole_coupling(c, I_vec, S_vec):
+def _spin_dipole_dipole_coupling(c: float, I_vec: np.ndarray, S_vec: np.ndarray) -> np.ndarray:
     ''' 
     Calculate the spin dipoile-dipole coupling term
 
@@ -235,9 +225,9 @@ def spin_dipole_dipole_coupling(c, I_vec, S_vec):
         H (numpy.ndarray) - Hamiltonian for spin-spin interaction
     '''
 
-    return c*np.matmul(I_vec[2], S_vec[2]) # index-2 is the z-component
+    return c*np.matmul(I_vec[2], S_vec[2]) 
 
-def nuclear_spin_rotational_coupling(C, I_vec, N_vec):
+def _nuclear_spin_rotational_coupling(C: float, I_vec: np.ndarray, N_vec: np.ndarray) -> np.ndarray:
     ''' 
     Calculate the nuclear spin-rotational coupling term
 
@@ -251,7 +241,7 @@ def nuclear_spin_rotational_coupling(C, I_vec, N_vec):
 
     return C*np.matmul(I_vec, N_vec).sum(axis=0)
 
-def hamiltonian_no_field(Nmax, consts:MolecularConstants):
+def _hamiltonian_no_field(Nmax: int, consts: MolecularConstants) -> np.ndarray:
     '''
     Calculate the field-free Hyperfine hamiltonian
 
@@ -263,12 +253,12 @@ def hamiltonian_no_field(Nmax, consts:MolecularConstants):
         H : Hamiltonian for the hyperfine structure
     '''
 
-    N_vec, S_vec, I_vec = generate_vecs(Nmax, S=consts.ElectronSpin_S, I=consts.NuclearSpin_I)
-    H = rotational(Nmax=Nmax, Brot=consts.RotationalConstant_B, Drot=consts.CentrifugalDistortion_D) + \
-        spin_rotational_coupling(consts.SpinRotationalCoupling_gamma, S_vec=S_vec, N_vec=N_vec) + \
-        hyperfine(consts.HyperfineCoupling_b, I_vec=I_vec, S_vec=S_vec) + \
-        spin_dipole_dipole_coupling(consts.SpinDipoleDipoleCoupling_c, I_vec=I_vec, S_vec=S_vec) + \
-        nuclear_spin_rotational_coupling(consts.NuclearSpinRotationalCoupling_C, I_vec=I_vec, N_vec=N_vec)
+    N_vec, S_vec, I_vec = _generate_vecs(Nmax, S=consts.ElectronSpin_S, I=consts.NuclearSpin_I)
+    H = _rotational(N_vec=N_vec, Brot=consts.RotationalConstant_B, Drot=consts.CentrifugalDistortion_D) + \
+        _spin_rotational_coupling(consts.SpinRotationalCoupling_gamma, S_vec=S_vec, N_vec=N_vec) + \
+        _hyperfine(consts.HyperfineCoupling_b, I_vec=I_vec, S_vec=S_vec) + \
+        _spin_dipole_dipole_coupling(consts.SpinDipoleDipoleCoupling_c, I_vec=I_vec, S_vec=S_vec) + \
+        _nuclear_spin_rotational_coupling(consts.NuclearSpinRotationalCoupling_C, I_vec=I_vec, N_vec=N_vec)
 
     return H
 
@@ -298,7 +288,7 @@ def zeeman_ham(Nmax, consts):
         Returns:
             Hz (numpy.ndarray): Hamiltonian for the zeeman effect
     '''
-    # N,I1,I2 = generate_vecs(Nmax,I1_mag,I2_mag)
+    # N,I1,I2 = _generate_vecs(Nmax,I1_mag,I2_mag)
     # H = zeeman(consts['Mu1'],I1)+zeeman(consts['Mu2'],I2)+\
     #             zeeman(consts['MuN'],N)
     # return H
@@ -307,7 +297,7 @@ def zeeman_ham(Nmax, consts):
 
 # This is the main build function and one that the user will actually have to
 # use.
-def build_hamiltonians(Nmax, consts, Zeeman=False, Edc=False, Eac=False):
+def build_hamiltonians(Nmax: int, consts: MolecularConstants, Zeeman: bool = False, Edc: bool = False, Eac: bool = False) -> tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
     ''' 
     Return the hyperfine hamiltonian.
 
@@ -325,7 +315,7 @@ def build_hamiltonians(Nmax, consts, Zeeman=False, Edc=False, Eac=False):
         H0, Hz, Hdc, Hac (numpy.ndarray): Each of the terms in the Hamiltonian.
     '''
 
-    H0 = hamiltonian_no_field(Nmax, consts)
+    H0 = _hamiltonian_no_field(Nmax, consts)
 
     # if Zeeman:
     #     Hz = zeeman_ham(Nmax, consts)
@@ -343,5 +333,5 @@ def build_hamiltonians(Nmax, consts, Zeeman=False, Edc=False, Eac=False):
     # else:
     #     Hac =0
 
-    return H0, 0, 0, 0
+    return (H0, 0, 0, 0)
     # return H0, Hz, Hdc, Hac

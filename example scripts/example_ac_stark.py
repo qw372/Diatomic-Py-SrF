@@ -1,7 +1,7 @@
 import numpy
 from matplotlib import pyplot
-import diatom.hamiltonian as hamiltonian
-from diatom.constants import Rb87Cs133
+import diatomic.hamiltonian as hamiltonian
+from diatomic.constants import Rb87Cs133
 from numpy.linalg import eigh
 from scipy import constants
 from matplotlib.collections import LineCollection
