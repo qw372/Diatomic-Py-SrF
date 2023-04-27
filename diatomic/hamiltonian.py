@@ -157,7 +157,7 @@ def _generate_vecs(Nmax: int, S: float, I: float) -> tuple[np.ndarray, np.ndarra
     row_N = np.repeat(N_list, shapeN).reshape((shapeN, shapeN))
     row_mN = np.repeat(mN_list, shapeN).reshape((shapeN, shapeN))
 
-    D_func = lambda N, mN, Nprime, mNprime, p: np.sqrt(2*N+1)*np.sqrt(2*Nprime+1)*wigner_3j(N, 1, Nprime, -mN, p, mNprime)*wigner_3j(N, 1, Nprime, 0, 0, 0)
+    D_func = lambda N, mN, Nprime, mNprime, p: np.sqrt(2*N+1)*np.sqrt(2*Nprime+1)*((-1)**mN)*wigner_3j(N, 1, Nprime, -mN, p, mNprime)*wigner_3j(N, 1, Nprime, 0, 0, 0)
     D_minus_1_func = lambda N, mN, Nprime, mNprime: D_func(N, mN, Nprime, mNprime, -1)
     D_0_func = lambda N, mN, Nprime, mNprime: D_func(N, mN, Nprime, mNprime, 0)
     D_plus_1_func = lambda N, mN, Nprime, mNprime: D_func(N, mN, Nprime, mNprime, 1)
