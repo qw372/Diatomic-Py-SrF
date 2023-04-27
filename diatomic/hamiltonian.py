@@ -1,5 +1,6 @@
 import numpy as np
 from scipy.linalg import block_diag
+from sympy.physics.wigner import wigner_3j
 from .constants import MolecularConstants
 
 '''
@@ -142,6 +143,7 @@ def _generate_vecs(Nmax: int, S: float, I: float) -> tuple[np.ndarray, np.ndarra
                         np.kron(np.identity(shapeN), np.kron(np.identity(shapeS),_y_operator(I))),
                         np.kron(np.identity(shapeN), np.kron(np.identity(shapeS),_z_operator(I)))])
     
+    # Below we'll calculate matrix representatoin of vector n, the unit vector represents the orientation of internuclear axis, under |N, mN> basis
     N_list = np.array([])
     mN_list = np.array([])
     for N in range(Nmax+1):
@@ -155,7 +157,18 @@ def _generate_vecs(Nmax: int, S: float, I: float) -> tuple[np.ndarray, np.ndarra
     row_N = np.repeat(N_list, shapeN).reshape((shapeN, shapeN))
     row_mN = np.repeat(mN_list, shapeN).reshape((shapeN, shapeN))
 
-    D_minus_1 = 
+    D_func = lambda N, mN, Nprime, mNprime, p: np.sqrt(2*N+1)*np.sqrt(2*Nprime+1)*wigner_3j(N, 1, Nprime, -mN, p, mNprime)*wigner_3j(N, 1, Nprime, 0, 0, 0)
+    D_minus_1_func = lambda N, mN, Nprime, mNprime: D_func(N, mN, Nprime, mNprime, -1)
+    D_0_func = lambda N, mN, Nprime, mNprime: D_func(N, mN, Nprime, mNprime, 0)
+    D_plus_1_func = lambda N, mN, Nprime, mNprime: D_func(N, mN, Nprime, mNprime, 1)
+
+    D_minus_1_vfunc = np.vectorize(D_minus_1_func)
+    D_0_vfunc = np.vectorize(D_0_func)
+    D_plus_1_vfunc = np.vectorize(D_plus_1_func)
+
+    D_minus_1 = D_minus_1_vfunc(column_N, column_mN, row_N, row_mN)
+    D_0 = D_0_vfunc(column_N, column_mN, row_N, row_mN)
+    D_plus_1 = D_plus_1_vfunc(column_N, column_mN, row_N, row_mN)
 
 
     return (N_vec, S_vec, I_vec)
