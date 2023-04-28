@@ -3,17 +3,6 @@ from dataclasses import dataclass
 
 __all__ = ['SrFConstants']
 
-###############################################################################
-# Molecular Constants
-# Check up to date if precision needed!
-###############################################################################
-
-h = scipy.constants.h
-muN = scipy.constants.physical_constants['nuclear magneton'][0]
-bohr = scipy.constants.physical_constants['Bohr radius'][0]
-eps0 = scipy.constants.epsilon_0
-c = scipy.constants.c
-
 @dataclass
 class MolecularConstants:
     """ 
@@ -28,8 +17,9 @@ class MolecularConstants:
     CentrifugalDistortion_D: float # Hz, defined as E/h
     SpinRotationalCoupling_gamma: float # Hz, defined as E/h
     HyperfineCoupling_b: float # Hz, defined as E/h
-    SpinDipoleDipoleCoupling_c: float # Hz, defined as E/h
+    DipoleDipoleCoupling_c: float # Hz, defined as E/h
     NuclearSpinRotationalCoupling_C: float # Hz, defined as E/h
+
 
 # See John Barry's thesis chapter 2.4, 2.5 for details
 SrFConstants = MolecularConstants(NuclearSpin_I=1/2,
@@ -39,5 +29,5 @@ SrFConstants = MolecularConstants(NuclearSpin_I=1/2,
                                   CentrifugalDistortion_D=7482.4,
                                   SpinRotationalCoupling_gamma=75.02249e6,
                                   HyperfineCoupling_b=97.6670e6,
-                                  SpinDipoleDipoleCoupling_c=29.846e6,
+                                  DipoleDipoleCoupling_c=29.846e6*0,
                                   NuclearSpinRotationalCoupling_C=0.00230e6)

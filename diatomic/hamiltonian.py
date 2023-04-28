@@ -88,7 +88,7 @@ def _z_operator(J: float) -> np.ndarray:
 
     return np.diag(np.arange(-J, J+1))
 
-def _generate_vecs(Nmax: int, S: float, I: float) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
+def _generate_vecs(Nmax: int, S: float, I: float) -> tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
     ''' 
     Build N, S, I angular momentum vectors
 
@@ -100,7 +100,7 @@ def _generate_vecs(Nmax: int, S: float, I: float) -> tuple[np.ndarray, np.ndarra
         S (float): electronic spin
         I (float): Nuclear spin, assume only one nucleus has non-zero spin
     Returns:
-        N_vec, S_vec, I_vec (list of numpy.ndarray): length-3 list of (2Nmax+1)*(2S+1)*(2I+1) square numpy arrays
+        N_vec, S_vec, I_vec, n_vec (list of numpy.ndarray): length-3 list of (2Nmax+1)*(2S+1)*(2I+1) square numpy arrays
     '''
 
     assert isinstance(Nmax, int)
@@ -148,30 +148,53 @@ def _generate_vecs(Nmax: int, S: float, I: float) -> tuple[np.ndarray, np.ndarra
     mN_list = np.array([])
     for N in range(Nmax+1):
         # N_list = np.array([0, 1, 1, 1, 2, 2, 2, 2, 2, ...])
-        # N_list = np.array([0, -1, 0, 1, -2, -1, 0, 1, 2, ...])
+        # mN_list = np.array([0, -1, 0, 1, -2, -1, 0, 1, 2, ...])
         N_list = np.append(N_list, [N]*(2*N+1))
         mN_list = np.append(mN_list, np.arange(-N, N+1))
+        # mN_list = np.append(mN_list, np.arange(N, -N-1, -1))
 
-    column_N = np.tile(N_list, shapeN).reshape((shapeN, shapeN))
-    column_mN = np.tile(mN_list, shapeN).reshape((shapeN, shapeN))
-    row_N = np.repeat(N_list, shapeN).reshape((shapeN, shapeN))
-    row_mN = np.repeat(mN_list, shapeN).reshape((shapeN, shapeN))
-
-    D_func = lambda N, mN, Nprime, mNprime, p: np.sqrt(2*N+1)*np.sqrt(2*Nprime+1)*((-1)**mN)*wigner_3j(N, 1, Nprime, -mN, p, mNprime)*wigner_3j(N, 1, Nprime, 0, 0, 0)
+    # We first define functions to calculate matrix presentation of Wigner matrix D^{1*}_{p0}, for p = -1, 0, 1
+    D_func = lambda N, mN, Nprime, mNprime, p: float(np.sqrt(2*N+1)*np.sqrt(2*Nprime+1)*((-1)**mN)*wigner_3j(N, 1, Nprime, -mN, p, mNprime)*wigner_3j(N, 1, Nprime, 0, 0, 0))
     D_minus_1_func = lambda N, mN, Nprime, mNprime: D_func(N, mN, Nprime, mNprime, -1)
     D_0_func = lambda N, mN, Nprime, mNprime: D_func(N, mN, Nprime, mNprime, 0)
     D_plus_1_func = lambda N, mN, Nprime, mNprime: D_func(N, mN, Nprime, mNprime, 1)
 
-    D_minus_1_vfunc = np.vectorize(D_minus_1_func)
-    D_0_vfunc = np.vectorize(D_0_func)
-    D_plus_1_vfunc = np.vectorize(D_plus_1_func)
+    # # Vectorized method to calculate matrix representation of vector n
+    # # Given small Nmax here (usually < 10), it's not significant faster than for loop
+    # column_N = np.tile(N_list, shapeN).reshape((shapeN, shapeN))
+    # column_mN = np.tile(mN_list, shapeN).reshape((shapeN, shapeN))
+    # row_N = np.repeat(N_list, shapeN).reshape((shapeN, shapeN))
+    # row_mN = np.repeat(mN_list, shapeN).reshape((shapeN, shapeN))
 
-    D_minus_1 = D_minus_1_vfunc(column_N, column_mN, row_N, row_mN)
-    D_0 = D_0_vfunc(column_N, column_mN, row_N, row_mN)
-    D_plus_1 = D_plus_1_vfunc(column_N, column_mN, row_N, row_mN)
+    # D_minus_1_vfunc = np.vectorize(D_minus_1_func)
+    # D_0_vfunc = np.vectorize(D_0_func)
+    # D_plus_1_vfunc = np.vectorize(D_plus_1_func)
 
+    # D_minus_1 = D_minus_1_vfunc(row_N, row_mN, column_N, column_mN)
+    # D_0 = D_0_vfunc(row_N, row_mN, column_N, column_mN)
+    # D_plus_1 = D_plus_1_vfunc(row_N, row_mN, column_N, column_mN)
 
-    return (N_vec, S_vec, I_vec)
+    # for loop method to calculate matrix representation of vector n
+    D_minus_1 = np.zeros((shapeN, shapeN))
+    D_0 = np.zeros((shapeN, shapeN))
+    D_plus_1 = np.zeros((shapeN, shapeN))
+    for i in range(shapeN):
+        for j in range(shapeN):
+            D_minus_1[i, j] = D_minus_1_func(N_list[i], mN_list[i], N_list[j], mN_list[j])
+            D_0[i, j] = D_0_func(N_list[i], mN_list[i], N_list[j], mN_list[j])
+            D_plus_1[i, j] = D_plus_1_func(N_list[i], mN_list[i], N_list[j], mN_list[j])
+
+    # matrix representation of vector n under |N, mN> subspace
+    nx = (D_minus_1 - D_plus_1) / np.sqrt(2)
+    ny = (D_minus_1 + D_plus_1) / np.sqrt(2) * 1j
+    nz = D_0
+
+    # matrix representation of vector n under |N, mN, S, mS, I, mI> full space
+    n_vec = np.array([np.kron(nx, np.kron(np.identity(shapeS), np.identity(shapeI))),
+                        np.kron(ny, np.kron(np.identity(shapeS), np.identity(shapeI))),
+                        np.kron(nz, np.kron(np.identity(shapeS), np.identity(shapeI)))])
+
+    return (N_vec, S_vec, I_vec, n_vec)
 
 # From here the functions will calculate individual terms in the Hamiltonian
 
@@ -226,19 +249,19 @@ def _hyperfine(b: float, I_vec: np.ndarray, S_vec: np.ndarray) -> np.ndarray:
 
     return b*np.matmul(I_vec, S_vec).sum(axis=0)
 
-def _spin_dipole_dipole_coupling(c: float, I_vec: np.ndarray, S_vec: np.ndarray) -> np.ndarray:
+def _spin_dipole_dipole_coupling(c: float, I_vec: np.ndarray, S_vec: np.ndarray, n_vec: np.ndarray) -> np.ndarray:
     ''' 
     Calculate the spin dipoile-dipole coupling term
 
     Args:
         gamma (float) - spin-rotational coupling coefficient
-        I_vec, S_vec (list of numpy.ndarray) - Angular momentum vectors
+        I_vec, S_vec, n_vec (list of numpy.ndarray) - Angular momentum vectors
 
     Returns:
         H (numpy.ndarray) - Hamiltonian for spin-spin interaction
     '''
 
-    return c*np.matmul(I_vec[2], S_vec[2]) 
+    return c*np.matmul(np.matmul(S_vec, n_vec).sum(axis=0), np.matmul(I_vec, n_vec).sum(axis=0)) 
 
 def _nuclear_spin_rotational_coupling(C: float, I_vec: np.ndarray, N_vec: np.ndarray) -> np.ndarray:
     ''' 
@@ -266,11 +289,11 @@ def _hamiltonian_no_field(Nmax: int, consts: MolecularConstants) -> np.ndarray:
         H : Hamiltonian for the hyperfine structure
     '''
 
-    N_vec, S_vec, I_vec = _generate_vecs(Nmax, S=consts.ElectronSpin_S, I=consts.NuclearSpin_I)
+    N_vec, S_vec, I_vec, n_vec= _generate_vecs(Nmax, S=consts.ElectronSpin_S, I=consts.NuclearSpin_I)
     H = _rotational(N_vec=N_vec, Brot=consts.RotationalConstant_B, Drot=consts.CentrifugalDistortion_D) + \
         _spin_rotational_coupling(consts.SpinRotationalCoupling_gamma, S_vec=S_vec, N_vec=N_vec) + \
         _hyperfine(consts.HyperfineCoupling_b, I_vec=I_vec, S_vec=S_vec) + \
-        _spin_dipole_dipole_coupling(consts.SpinDipoleDipoleCoupling_c, I_vec=I_vec, S_vec=S_vec) + \
+        _spin_dipole_dipole_coupling(consts.DipoleDipoleCoupling_c, I_vec=I_vec, S_vec=S_vec, n_vec=n_vec) + \
         _nuclear_spin_rotational_coupling(consts.NuclearSpinRotationalCoupling_C, I_vec=I_vec, N_vec=N_vec)
 
     return H
