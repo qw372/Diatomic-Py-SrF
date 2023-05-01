@@ -7,6 +7,8 @@ from .constants import MolecularConstants
 This module contains the main code to calculate the hyperfine structure of 
 molecules in external electric and magnetic fields. 
 
+Here we use uncoupled basis |N, mN>|S, mS>|I, mI>, and mJ (J is N, S, or I) is in descending order of J, J-1, ..., -J+1, -J.
+
 Energies in the Hamiltonian have units of Hz (defined as E/h). 
 
 Example:
@@ -40,7 +42,7 @@ def _raising_operator(J: float) -> np.ndarray:
     assert J >= 0
 
     mJ_list = np.arange(-J, J)
-    elements = np.sqrt(J*(J+1)-mJ_list*(mJ_list+1))
+    elements = np.sqrt(J*(J+1)-mJ_list*(mJ_list+1)) # assume the basis |J, mJ> is in order J, J-1, ..., -J+1, -J
     J_plus = np.diag(elements, 1)
 
     return J_plus
@@ -86,7 +88,7 @@ def _z_operator(J: float) -> np.ndarray:
     assert float(2*J+1).is_integer()
     assert J >= 0
 
-    return np.diag(np.arange(-J, J+1))
+    return np.diag(np.arange(J, -J-1, -1))
 
 def _generate_vecs(Nmax: int, S: float, I: float) -> tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
     ''' 
@@ -148,10 +150,9 @@ def _generate_vecs(Nmax: int, S: float, I: float) -> tuple[np.ndarray, np.ndarra
     mN_list = np.array([])
     for N in range(Nmax+1):
         # N_list = np.array([0, 1, 1, 1, 2, 2, 2, 2, 2, ...])
-        # mN_list = np.array([0, -1, 0, 1, -2, -1, 0, 1, 2, ...])
+        # mN_list = np.array([0, 1, 0, -1, 2, 1, 0, -1, -2, ...])
         N_list = np.append(N_list, [N]*(2*N+1))
-        mN_list = np.append(mN_list, np.arange(-N, N+1))
-        # mN_list = np.append(mN_list, np.arange(N, -N-1, -1))
+        mN_list = np.append(mN_list, np.arange(N, -N-1, -1))
 
     # We first define functions to calculate matrix presentation of Wigner matrix D^{1*}_{p0}, for p = -1, 0, 1
     D_func = lambda N, mN, Nprime, mNprime, p: float(np.sqrt(2*N+1)*np.sqrt(2*Nprime+1)*((-1)**mN)*wigner_3j(N, 1, Nprime, -mN, p, mNprime)*wigner_3j(N, 1, Nprime, 0, 0, 0))
@@ -295,7 +296,7 @@ def _hamiltonian_no_field(Nmax: int, consts: MolecularConstants) -> np.ndarray:
         _hyperfine(consts.HyperfineCoupling_b, I_vec=I_vec, S_vec=S_vec) + \
         _spin_dipole_dipole_coupling(consts.DipoleDipoleCoupling_c, I_vec=I_vec, S_vec=S_vec, n_vec=n_vec) + \
         _nuclear_spin_rotational_coupling(consts.NuclearSpinRotationalCoupling_C, I_vec=I_vec, N_vec=N_vec)
-
+    
     return H
 
 def zeeman(Cz,J):

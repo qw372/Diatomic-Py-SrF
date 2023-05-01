@@ -29,5 +29,5 @@ SrFConstants = MolecularConstants(NuclearSpin_I=1/2,
                                   CentrifugalDistortion_D=7482.4,
                                   SpinRotationalCoupling_gamma=75.02249e6,
                                   HyperfineCoupling_b=97.6670e6,
-                                  DipoleDipoleCoupling_c=29.846e6*0,
+                                  DipoleDipoleCoupling_c=29.846e6,
                                   NuclearSpinRotationalCoupling_C=0.00230e6)
