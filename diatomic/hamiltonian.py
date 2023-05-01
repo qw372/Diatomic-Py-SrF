@@ -102,7 +102,7 @@ def _generate_vecs(Nmax: int, S: float, I: float) -> tuple[np.ndarray, np.ndarra
         S (float): electronic spin
         I (float): Nuclear spin, assume only one nucleus has non-zero spin
     Returns:
-        N_vec, S_vec, I_vec, n_vec (list of numpy.ndarray): length-3 list of (2Nmax+1)*(2S+1)*(2I+1) square numpy arrays
+        N_vec, S_vec, I_vec, n_vec (numpy.ndarray): length-3 list of (2Nmax+1)*(2S+1)*(2I+1) square numpy arrays
     '''
 
     assert isinstance(Nmax, int)
@@ -199,28 +199,45 @@ def _generate_vecs(Nmax: int, S: float, I: float) -> tuple[np.ndarray, np.ndarra
 
 # From here the functions will calculate individual terms in the Hamiltonian
 
-def _rotational(N_vec: np.ndarray, Brot: float, Drot: float) -> np.ndarray:
+def _rotational(Nmax: int, Brot: np.ndarray, S: float, I: float) -> np.ndarray:
     ''' 
-    Rigid rotor rotational structure
+    Rotational structure
 
     Generates the hyperfine-free hamiltonian for the rotational levels of
-    a rigid-rotor like molecule. Includes the centrifugal distortion term.
+    molecules, including higher-order distortion terms (Dunham series, see John Barry thesis section 2.4 for details).
 
     Matrix is returned in the N,mN basis.
 
     Args:
-        N_vec (list of numpy.ndarray) - length 3 list representing the Angular momentum vector for rotation
-        Brot (float) - Rotational constant coefficient
-        Drot (float) - Centrifugal distortion coefficient
+        Nmax: max rotational levels to include 
+        Brot (np.ndarray) - Rotational constant coefficient expressed in Dunham series in order of [[Y_00, Y_01, Y_02, ...], [Y_10, Y_11, Y_12, ...], ...]
+        S, I: electronic and nuclear spin
 
     Returns:
         Hrot (numpy.ndarray) - hamiltonian for rotation in the N,MN basis
     '''
 
-    N_squared = np.matmul(N_vec, N_vec).sum(axis=0) # np.matmul calculates Nx*Nx, Ny*Ny, Nz*Nz separately and then we sum them up
-    N_squared_squared = np.matmul(N_squared, N_squared)
+    assert isinstance(Nmax, int)
+    assert Nmax >=0
+    assert isinstance(Brot, np.ndarray)
+    assert len(Brot.shape) == 2 # assert Brot is a 2D array
 
-    return Brot*N_squared - Drot*N_squared_squared
+    Hrot = np.array([[]])
+    v = 0 # here we only consider v=0 vibrational levels
+
+    for N in range(Nmax+1):
+        Y_sum = 0
+        for l, Y_list in enumerate(Brot):
+            for m, Y in enumerate(Y_list):
+                Y_sum += ((v+1/2)**l)*(((N*(N+1)))**m)
+
+        Hrot = block_diag(Hrot, np.identity(2*N+1))
+
+
+    # remove the first element of the N vectors, which is empty
+    Hrot = Hrot[1:,:]
+
+    return Brot
 
 def _spin_rotational_coupling(gamma: float, S_vec: np.ndarray, N_vec: np.ndarray) -> np.ndarray:
     ''' 
@@ -228,7 +245,7 @@ def _spin_rotational_coupling(gamma: float, S_vec: np.ndarray, N_vec: np.ndarray
 
     Args:
         gamma (float) - spin-rotational coupling coefficient
-        S_vec, N_vec (list of numpy.ndarray) - Angular momentum vectors
+        S_vec, N_vec (numpy.ndarray) - Angular momentum vectors
 
     Returns:
         H (numpy.ndarray) - Hamiltonian for spin-spin interaction
@@ -242,7 +259,7 @@ def _hyperfine(b: float, I_vec: np.ndarray, S_vec: np.ndarray) -> np.ndarray:
 
     Args:
         b (float) - hyperfine coefficient
-        I_vec, S_vec (list of numpy.ndarray) - Angular momentum vectors
+        I_vec, S_vec (numpy.ndarray) - Angular momentum vectors
 
     Returns:
         H (numpy.ndarray) - Hamiltonian for spin-spin interaction
@@ -256,7 +273,7 @@ def _spin_dipole_dipole_coupling(c: float, I_vec: np.ndarray, S_vec: np.ndarray,
 
     Args:
         gamma (float) - spin-rotational coupling coefficient
-        I_vec, S_vec, n_vec (list of numpy.ndarray) - Angular momentum vectors
+        I_vec, S_vec, n_vec (numpy.ndarray) - Angular momentum vectors
 
     Returns:
         H (numpy.ndarray) - Hamiltonian for spin-spin interaction
@@ -270,7 +287,7 @@ def _nuclear_spin_rotational_coupling(C: float, I_vec: np.ndarray, N_vec: np.nda
 
     Args:
         C (float) - nuclear spin-rotational coupling coefficient
-        I_vec, N_vec (list of numpy.ndarray) - Angular momentum vectors
+        I_vec, N_vec (numpy.ndarray) - Angular momentum vectors
 
     Returns:
         H (numpy.ndarray) - Hamiltonian for spin-spin interaction
@@ -291,7 +308,7 @@ def _hamiltonian_no_field(Nmax: int, consts: MolecularConstants) -> np.ndarray:
     '''
 
     N_vec, S_vec, I_vec, n_vec= _generate_vecs(Nmax, S=consts.ElectronSpin_S, I=consts.NuclearSpin_I)
-    H = _rotational(N_vec=N_vec, Brot=consts.RotationalConstant_B, Drot=consts.CentrifugalDistortion_D) + \
+    H = _rotational(Brot=consts.RotationalConstant_B, N_vec=N_vec) + \
         _spin_rotational_coupling(consts.SpinRotationalCoupling_gamma, S_vec=S_vec, N_vec=N_vec) + \
         _hyperfine(consts.HyperfineCoupling_b, I_vec=I_vec, S_vec=S_vec) + \
         _spin_dipole_dipole_coupling(consts.DipoleDipoleCoupling_c, I_vec=I_vec, S_vec=S_vec, n_vec=n_vec) + \

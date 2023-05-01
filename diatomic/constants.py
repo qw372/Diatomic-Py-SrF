@@ -15,7 +15,6 @@ class MolecularConstants:
     ElectronSpin_S: float # electronic spin
     DipoleMoment_d: float # Debye, body-frame dipole moment
     RotationalConstant_B: np.ndarray # Hz, defined as E/h, expressed in Dunham series in order of [[Y_00, Y_01, Y_02, ...], [Y_10, Y_11, Y_12, ...], ...]
-    # CentrifugalDistortion_D: float # Hz, defined as E/h
     SpinRotationalCoupling_gamma: float # Hz, defined as E/h
     HyperfineCoupling_b: float # Hz, defined as E/h
     DipoleDipoleCoupling_c: float # Hz, defined as E/h
@@ -30,7 +29,6 @@ SrFConstants = MolecularConstants(NuclearSpin_I = 1/2,
                                                                    [501.96496, -1.551101e-3, -2.423e-10],
                                                                    [-2.204617, 2.1850e-6, 1.029e-11],
                                                                    [5.2815e-3, 1.518e-8]])*1e2*speed_of_light,
-                                #   CentrifugalDistortion_D = 7482.4,
                                   SpinRotationalCoupling_gamma = 75.02249e6,
                                   HyperfineCoupling_b = 97.6670e6,
                                   DipoleDipoleCoupling_c = 29.846e6,
