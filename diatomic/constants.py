@@ -25,10 +25,10 @@ class MolecularConstants:
 SrFConstants = MolecularConstants(NuclearSpin_I = 1/2,
                                   ElectronSpin_S = 1/2,
                                   DipoleMoment_d = 3.4963,
-                                  RotationalConstant_B = np.array([[0, 0.250534383, -2.49586e-7, -3.30e-14]
+                                  RotationalConstant_B = np.array([[0.0, 0.250534383, -2.49586e-7, -3.30e-14],
                                                                    [501.96496, -1.551101e-3, -2.423e-10],
                                                                    [-2.204617, 2.1850e-6, 1.029e-11],
-                                                                   [5.2815e-3, 1.518e-8]])*1e2*speed_of_light,
+                                                                   [5.2815e-3, 1.518e-8]])*1e2*float(speed_of_light),
                                   SpinRotationalCoupling_gamma = 75.02249e6,
                                   HyperfineCoupling_b = 97.6670e6,
                                   DipoleDipoleCoupling_c = 29.846e6,

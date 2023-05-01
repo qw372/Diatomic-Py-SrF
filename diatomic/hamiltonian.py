@@ -229,15 +229,14 @@ def _rotational(Nmax: int, Brot: np.ndarray, S: float, I: float) -> np.ndarray:
         Y_sum = 0
         for l, Y_list in enumerate(Brot):
             for m, Y in enumerate(Y_list):
-                Y_sum += ((v+1/2)**l)*(((N*(N+1)))**m)
+                Y_sum += ((v+1/2)**l)*((N*(N+1))**m)
 
-        Hrot = block_diag(Hrot, np.identity(2*N+1))
-
+        Hrot = block_diag(Hrot, np.identity(2*N+1)*Y_sum)
 
     # remove the first element of the N vectors, which is empty
     Hrot = Hrot[1:,:]
 
-    return Brot
+    return Hrot
 
 def _spin_rotational_coupling(gamma: float, S_vec: np.ndarray, N_vec: np.ndarray) -> np.ndarray:
     ''' 
@@ -308,7 +307,7 @@ def _hamiltonian_no_field(Nmax: int, consts: MolecularConstants) -> np.ndarray:
     '''
 
     N_vec, S_vec, I_vec, n_vec= _generate_vecs(Nmax, S=consts.ElectronSpin_S, I=consts.NuclearSpin_I)
-    H = _rotational(Brot=consts.RotationalConstant_B, N_vec=N_vec) + \
+    H = _rotational(Nmax=Nmax, Brot=consts.RotationalConstant_B, S=consts.ElectronSpin_S, I=consts.NuclearSpin_I) + \
         _spin_rotational_coupling(consts.SpinRotationalCoupling_gamma, S_vec=S_vec, N_vec=N_vec) + \
         _hyperfine(consts.HyperfineCoupling_b, I_vec=I_vec, S_vec=S_vec) + \
         _spin_dipole_dipole_coupling(consts.DipoleDipoleCoupling_c, I_vec=I_vec, S_vec=S_vec, n_vec=n_vec) + \

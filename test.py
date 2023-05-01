@@ -4,7 +4,7 @@ import matplotlib.pyplot as plt
 import time
 
 from diatomic import build_hamiltonians, SrFConstants
-Nmax = 10
+Nmax = 5
 H0, _, _, _ = build_hamiltonians(Nmax, SrFConstants)
 H0 = H0[0:16, 0:16]
 
