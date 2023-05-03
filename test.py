@@ -3,12 +3,18 @@ from numpy.linalg import eigh, eig, eigvalsh
 import matplotlib.pyplot as plt
 import time
 
-from diatomic import build_hamiltonians, SrFConstants
-Nmax = 5
-H0, _, _, _ = build_hamiltonians(Nmax, SrFConstants)
-H0 = H0[0:16, 0:16]
+from diatomic import hyperfine_hamiltonian_no_field, Zeeman_hamiltonian, SrFConstants
 
-energies, states = eigh(H0)
-# print(H0[0:15, 0:15])
-# print("")
-print(np.sort(energies/1e6))
+
+Nmax = 5
+H0 = hyperfine_hamiltonian_no_field(Nmax, SrFConstants)
+
+for Bz in np.linspace(0, 10, 10):
+    Hz = Zeeman_hamiltonian(Nmax, SrFConstants, Bfield=np.array([0, 0, Bz]))
+    H = H0 + Hz
+    H = H[0:16, 0:16]
+
+    energies, states = eigh(H)
+    # print(H0[0:15, 0:15])
+    # print("")
+    print(energies[3]/1e6)

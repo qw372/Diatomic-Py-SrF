@@ -1,14 +1,19 @@
 import numpy as np
-from scipy.constants import speed_of_light
+from scipy.constants import physical_constants
 from dataclasses import dataclass
 
 __all__ = ['SrFConstants']
+
+speed_of_light = physical_constants["speed of light in vacuum"][0]
+electron_g_factor = physical_constants["electron g factor"][0] # -2.00231930436256
+Bohr_magneton = physical_constants["Bohr magneton in Hz/T"][0]/1e4 # 1399624.49361 Hz/Gauss
+nuclear_magneton = physical_constants["nuclear magneton in MHz/T"][0]*1e6/1e4 # 762.25932291 Hz/Gauss
 
 @dataclass
 class MolecularConstants:
     """ 
     Define constants for double-sigma molecule (Hund's case (b))
-    See John Barry's thesis chapter 2.4, 2.5 for details.
+    See John Barry's thesis chapter 2.4, 2.5, 2.10 for details.
     """
 
     NuclearSpin_I: float # nuclear spin, assume only one nucleus has non-zero spin
@@ -19,9 +24,14 @@ class MolecularConstants:
     HyperfineCoupling_b: np.ndarray # Hz, defined as E/h, expressed in Dunham series in order of [[X_00, X_01, X_02, ...], [X_10, X_11, X_12, ...], ...]
     DipoleDipoleCoupling_c: np.ndarray # Hz, defined as E/h, expressed in Dunham series in order of [[X_00, X_01, X_02, ...], [X_10, X_11, X_12, ...], ...]
     NuclearSpinRotationalCoupling_C: np.ndarray # Hz, defined as E/h, expressed in Dunham series in order of [[X_00, X_01, X_02, ...], [X_10, X_11, X_12, ...], ...]
+    EletronGFactor_gs: float = electron_g_factor# electron g factor
+    ElectronOrbitalGFactor_gL: float = -1 # electron orbital g factor
+    NuclearGFactor_gI: float = 0 # nuclear g factor, assume only one nucleus has non-zero spin
+    BohrMagneton_muB: float = Bohr_magneton # Hz/Gauss
+    NuclearMagneton_muN: float = nuclear_magneton # Hz/Gauss
 
 
-# See John Barry's thesis chapter 2.4, 2.5 for details
+# See John Barry's thesis chapter 2.4, 2.5, 2.10 for details
 SrFConstants = MolecularConstants(NuclearSpin_I = 1/2,
                                   
                                   ElectronSpin_S = 1/2,
@@ -42,4 +52,10 @@ SrFConstants = MolecularConstants(NuclearSpin_I = 1/2,
                                   DipoleDipoleCoupling_c = np.array([[29.846e6],
                                                                      [0.843e6]]), # make every row have the same length, it's easier to use later.
 
-                                  NuclearSpinRotationalCoupling_C = np.array([[0.00230e6]])) # make every row have the same length, it's easier to use later.
+                                  NuclearSpinRotationalCoupling_C = np.array([[0.00230e6]]), # make every row have the same length, it's easier to use later.
+                                  
+                                  NuclearGFactor_gI = 5.253736, # John Barry's thesis section 2.10 says g_I is 5.585, but wikipedia (Nuclear magnetic moment) says it's 5.253736 for 19F.
+                                  
+                                  ) 
+
+# See John Barry's thesis chapter 

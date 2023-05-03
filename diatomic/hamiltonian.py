@@ -23,7 +23,7 @@ Example:
         $ ev,es = la.eigh(H0)
 '''
 
-__all__ = ['build_hamiltonians']
+__all__ = ['hyperfine_hamiltonian_no_field', 'Zeeman_hamiltonian', 'Stark_dc_hamiltonian', 'Stark_ac_hamiltonian']
 
 def _raising_operator(J: float) -> np.ndarray:
     ''' 
@@ -322,7 +322,7 @@ def _nuclear_spin_rotational_coupling(C: np.ndarray, I_vec: np.ndarray, N_vec: n
 
     return np.matmul(C, np.matmul(I_vec, N_vec).sum(axis=0))
 
-def _hamiltonian_no_field(Nmax: int, consts: MolecularConstants) -> np.ndarray:
+def hyperfine_hamiltonian_no_field(Nmax: int, consts: MolecularConstants) -> np.ndarray:
     '''
     Calculate the field-free Hyperfine hamiltonian
 
@@ -349,52 +349,32 @@ def _hamiltonian_no_field(Nmax: int, consts: MolecularConstants) -> np.ndarray:
     
     return H
 
-def _B_field_dc(Cz,J):
-    pass
-
-def _E_field_dc(Nmax,d0,I1,I2):
-    pass
-
-def _E_field_ac():
-    pass
-
-# This is the main build function and one that the user will actually have to
-# use.
-def build_hamiltonians(Nmax: int, consts: MolecularConstants, Zeeman: bool = False, Edc: bool = False, Eac: bool = False) -> tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
-    ''' 
-    Return the hyperfine hamiltonian.
-
-    This function builds the hamiltonian matrices for evaluation so that
-    the user doesn't have to rebuild them every time and we can benefit from
-    numpy's ability to do distributed multiplication.
+def Zeeman_hamiltonian(Nmax: int, consts: MolecularConstants, Bfield: np.ndarray = np.array([0, 0, 0])) -> np.ndarray:
+    '''
+    Calculate the Zeeman shift hamiltonian
+    See John Barry's thesis Eq. 2.20 for details
+    TODO: John's thesis Eq. 2.20 is an imcomplete version of the Zeeman shift, need to add more terms
 
     Args:
         Nmax (int) - Maximum rotational level to include
-        Consts (MolecularConstants) - class of molecular constants
-        Zeeman, Edc, Aac (Boolean) - Switches for turning off parts of the total Hamiltonian 
-        can save significant time on calculations where DC and AC fields are not required 
-
+        Consts (MolecularConstants): class of molecular constants
+        Bfield (np.ndarray): Magnetic field vector in units of Gauss
     Returns:
-        H0, Hz, Hdc, Hac (np.ndarray): Each of the terms in the Hamiltonian.
+        H : Hamiltonian for the hyperfine structure
     '''
 
-    H0 = _hamiltonian_no_field(Nmax, consts)
+    assert np.shape(Bfield) == (3,) # Bfield must be a 1D vector of length 3
 
-    # if Zeeman:
-    #     Hz = zeeman_ham(Nmax, consts)
-    # else:
-    #     Hz = 0
+    N_vec, S_vec, I_vec, n_vec= _generate_vecs(Nmax=Nmax, S=consts.ElectronSpin_S, I=consts.NuclearSpin_I)
 
-    # if Edc:
-    #     Hdc = dc(Nmax,consts['d0'], I1, I2)
-    # else:
-    #     Hdc =0
+    Hz = - consts.EletronGFactor_gs * consts.BohrMagneton_muB * np.sum([Bfield[i]*S_vec[i] for i in range(len(Bfield))], axis=0) # Electron spin Zeeman effect
+    Hz += 0 # electron orbital Zeeman shift, for sigma state molecule it's zero
+    Hz += - consts.NuclearGFactor_gI * consts.NuclearMagneton_muN * np.sum([Bfield[i]*I_vec[i] for i in range(len(Bfield))], axis=0) # Nuclear Zeeman effect
+  
+    return Hz
 
-    # if ac:
-    #     Hac = (1./(2*eps0*c))*(ac_iso(Nmax,consts['a0'],I1,I2)+\
-    #     ac_aniso(Nmax,consts['a2'],consts['Beta'],I1,I2))
-    # else:
-    #     Hac =0
+def Stark_dc_hamiltonian(Nmax,d0,I1,I2):
+    pass
 
-    return (H0, 0, 0, 0)
-    # return H0, Hz, Hdc, Hac
+def Stark_ac_hamiltonian():
+    pass
