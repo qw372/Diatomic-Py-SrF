@@ -57,5 +57,3 @@ SrFConstants = MolecularConstants(NuclearSpin_I = 1/2,
                                   NuclearGFactor_gI = 5.253736, # John Barry's thesis section 2.10 says g_I is 5.585, but wikipedia (Nuclear magnetic moment) says it's 5.253736 for 19F.
                                   
                                   ) 
-
-# See John Barry's thesis chapter 

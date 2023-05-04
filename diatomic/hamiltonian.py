@@ -353,7 +353,7 @@ def Zeeman_hamiltonian(Nmax: int, consts: MolecularConstants, Bfield: np.ndarray
     '''
     Calculate the Zeeman shift hamiltonian
     See John Barry's thesis Eq. 2.20 for details
-    TODO: John's thesis Eq. 2.20 is an imcomplete version of the Zeeman shift, need to add more terms
+    TODO: John's thesis Eq. 2.20 is an incomplete version of the Zeeman shift, need to add more terms
 
     Args:
         Nmax (int) - Maximum rotational level to include
@@ -373,7 +373,7 @@ def Zeeman_hamiltonian(Nmax: int, consts: MolecularConstants, Bfield: np.ndarray
   
     return Hz
 
-def Stark_dc_hamiltonian(Nmax,d0,I1,I2):
+def Stark_dc_hamiltonian(Nmax: int, consts: MolecularConstants, Bfield: np.ndarray = np.array([0, 0, 0])) -> np.ndarray:
     pass
 
 def Stark_ac_hamiltonian():
