@@ -333,18 +333,32 @@ def hyperfine_hamiltonian_no_field(Nmax: int, consts: MolecularConstants) -> np.
         H : Hamiltonian for the hyperfine structure
     '''
 
-    N_vec, S_vec, I_vec, n_vec= _generate_vecs(Nmax=Nmax, S=consts.ElectronSpin_S, I=consts.NuclearSpin_I)
+    assert isinstance(Nmax, int)
+    assert Nmax >= 0
+
+    assert (2*consts.ElectronSpin_S+1).is_integer()
+    assert consts.ElectronSpin_S > 0
+    assert (2*consts.NuclearSpin_I+1).is_integer()
+    assert consts.NuclearSpin_I > 0
+
+    dim = int((Nmax+1)**2*(2*consts.ElectronSpin_S+1)*(2*consts.NuclearSpin_I+1))
+
+    # to calculate spin dipole-dipole coupling, we use <N_i|n^2|N_j > = \sum_{N_k} <N_i|n|N_k><N_k|n|N_j>. And to be accurate, we need to include up to Nk = max{Ni, Nj}+1
+    N_vec_1, S_vec_1, I_vec_1, n_vec_1= _generate_vecs(Nmax=Nmax+1, S=consts.ElectronSpin_S, I=consts.NuclearSpin_I)
+    N_vec = N_vec_1[:, 0:dim, 0:dim]
+    S_vec = S_vec_1[:, 0:dim, 0:dim]
+    I_vec = I_vec_1[:, 0:dim, 0:dim]
 
     B_matrix = _generate_coefficients(Nmax=Nmax, S=consts.ElectronSpin_S, I=consts.NuclearSpin_I, DunhamSeries=consts.RotationalConstant_B)
     gamma_matrix = _generate_coefficients(Nmax=Nmax, S=consts.ElectronSpin_S, I=consts.NuclearSpin_I, DunhamSeries=consts.SpinRotationalCoupling_gamma)
     b_matrix = _generate_coefficients(Nmax=Nmax, S=consts.ElectronSpin_S, I=consts.NuclearSpin_I, DunhamSeries=consts.HyperfineCoupling_b)
-    c_matrix = _generate_coefficients(Nmax=Nmax, S=consts.ElectronSpin_S, I=consts.NuclearSpin_I, DunhamSeries=consts.DipoleDipoleCoupling_c)
+    c_matrix = _generate_coefficients(Nmax=Nmax+1, S=consts.ElectronSpin_S, I=consts.NuclearSpin_I, DunhamSeries=consts.DipoleDipoleCoupling_c)
     C_matrix = _generate_coefficients(Nmax=Nmax, S=consts.ElectronSpin_S, I=consts.NuclearSpin_I, DunhamSeries=consts.NuclearSpinRotationalCoupling_C)
 
     H = _rotational(B=B_matrix) + \
         _spin_rotational_coupling(gamma=gamma_matrix, S_vec=S_vec, N_vec=N_vec) + \
         _hyperfine(b=b_matrix, I_vec=I_vec, S_vec=S_vec) + \
-        _spin_dipole_dipole_coupling(c=c_matrix, I_vec=I_vec, S_vec=S_vec, n_vec=n_vec) + \
+        _spin_dipole_dipole_coupling(c=c_matrix, I_vec=I_vec_1, S_vec=S_vec_1, n_vec=n_vec_1)[0:dim, 0:dim] + \
         _nuclear_spin_rotational_coupling(C=C_matrix, I_vec=I_vec, N_vec=N_vec)
     
     return H
@@ -358,9 +372,9 @@ def Zeeman_hamiltonian(Nmax: int, consts: MolecularConstants, Bfield: np.ndarray
     Args:
         Nmax (int) - Maximum rotational level to include
         Consts (MolecularConstants): class of molecular constants
-        Bfield (np.ndarray): Magnetic field vector in units of Gauss
+        Bfield (np.ndarray): Magnetic field vector in unit of Gauss
     Returns:
-        H : Hamiltonian for the hyperfine structure
+        H : Hamiltonian for Zeeman shift
     '''
 
     assert np.shape(Bfield) == (3,) # Bfield must be a 1D vector of length 3
@@ -373,8 +387,26 @@ def Zeeman_hamiltonian(Nmax: int, consts: MolecularConstants, Bfield: np.ndarray
   
     return Hz
 
-def Stark_dc_hamiltonian(Nmax: int, consts: MolecularConstants, Bfield: np.ndarray = np.array([0, 0, 0])) -> np.ndarray:
-    pass
+def Stark_dc_hamiltonian(Nmax: int, consts: MolecularConstants, Efield: np.ndarray = np.array([0, 0, 0])) -> np.ndarray:
+    '''
+    Calculate the dc Stark shift hamiltonian -\vec{E}\cdot\vec{d}, where \vec{d} is dipole moment operator.
+    \vec{d} is can also be written as \vec{d} = d\vec{n}, where \vec{n} is the unit vector of diatomic molecule internuclear axis and d is the molecule-frame dipole moment magnitude.
+
+    Args:
+        Nmax (int) - Maximum rotational level to include
+        Consts (MolecularConstants): class of molecular constants
+        Efield (np.ndarray): Electric field vector in unit of kV/cm
+    Returns:
+        H : Hamiltonian for dc Stark shift
+    '''
+
+    assert np.shape(Efield) == (3,) # Bfield must be a 1D vector of length 3
+
+    N_vec, S_vec, I_vec, n_vec= _generate_vecs(Nmax=Nmax, S=consts.ElectronSpin_S, I=consts.NuclearSpin_I)
+
+    Hdc = - consts.DebyeToHzcmperkV * consts.DipoleMoment_d * np.sum([Efield[i]*n_vec[i] for i in range(len(Efield))], axis=0) # in unit of Hz
+
+    return Hdc
 
 def Stark_ac_hamiltonian():
     pass

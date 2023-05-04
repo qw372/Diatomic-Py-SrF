@@ -3,37 +3,34 @@ from numpy.linalg import eigh, eig, eigvalsh
 import matplotlib.pyplot as plt
 import time, pandas
 
-from diatomic import hyperfine_hamiltonian_no_field, Zeeman_hamiltonian, SrFConstants
+from diatomic import hyperfine_hamiltonian_no_field, Stark_dc_hamiltonian, SrFConstants
 
 
 Nmax = 5
 H0 = hyperfine_hamiltonian_no_field(Nmax, SrFConstants)
 
 energy_list = np.array([])
-Bz_list = np.linspace(0, 100, 100)
-for Bz in Bz_list:
-    Hz = Zeeman_hamiltonian(Nmax, SrFConstants, Bfield=np.array([0, 0, Bz]))
-    H = H0 + Hz
-    H = H[0:16, 0:16]
+Ez_list = np.linspace(0, 100, 10)
+for Ez in Ez_list:
+    Hdc = Stark_dc_hamiltonian(Nmax, SrFConstants, Efield=np.array([0, 0, Ez]))
+    H = H0 + Hdc
 
     energies, states = eigh(H)
-    # print(H0[0:15, 0:15])
-    # print("")
 
-    energy_list = np.append(energy_list, energies[4:16]/1e6)
+    energy_list = np.append(energy_list, energies[0:36]/1e6)
 
 energy_list -= energy_list[0]
-energy_list = energy_list.reshape((-1, 12))
+energy_list = energy_list.reshape((-1, 36))
 
-plt.plot(Bz_list, energy_list)
+plt.plot(Ez_list, energy_list)
+plt.ylim(-15e3, 66e3)
 
-df = pandas.read_csv('Default Dataset (5).csv')
-df.columns =['Bfield', 'energy']
-# print(df)
-df['energy'] -= 63.41595833
-df['energy'] += 170.9331
-plt.plot(df['Bfield'], df['energy'], 'o')
-
+# df = pandas.read_csv('Default Dataset (5).csv')
+# df.columns =['Efield', 'energy']
+# # print(df)
+# df['energy'] -= 63.41595833
+# df['energy'] += 170.9331
+# plt.plot(df['Efield'], df['energy'], 'o')
 
 
 plt.grid()

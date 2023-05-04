@@ -29,6 +29,7 @@ class MolecularConstants:
     NuclearGFactor_gI: float = 0 # nuclear g factor, assume only one nucleus has non-zero spin
     BohrMagneton_muB: float = Bohr_magneton # Hz/Gauss
     NuclearMagneton_muN: float = nuclear_magneton # Hz/Gauss
+    DebyeToHzcmperkV: float = 3.33564e-25/physical_constants['Planck constant'][0] # conversion factor from Debye to Hz/(kV/cm)
 
 
 # See John Barry's thesis chapter 2.4, 2.5, 2.10 for details
