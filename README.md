@@ -1,6 +1,6 @@
 # Diatomic-Py-SrF
 
-Adapted for SrF molecule. Optimized some code. Check original repo & paper for more info.
+Adapted for SrF molecule. Optimized some codes. Check original repo & paper for more info.
 
 <!-- Best practices:
 
@@ -12,4 +12,4 @@ TODO:
 
 1. complete Zeeman shift hamiltonian, check nuclear g factor
 2. implement ac Stark shift
-3. sort_smooth
+3. uniqueness in sort_eigenstates function

@@ -33,7 +33,7 @@ def calc_electric_dipole_moment(Nmax: int, states: np.ndarray, consts: Molecular
     return dipole_moment_list.reshape((-1, 3))
 
 
-def sort_eigenstates(energies: np.ndarray, states: np.ndarray) -> tuple[np.ndarray, np.ndarray]:
+def sort_eigenstates(energies: np.ndarray, states: np.ndarray, assert_unique: bool = False) -> tuple[np.ndarray, np.ndarray]:
     ''' 
     Sort states to remove false avoided crossings.
 
@@ -45,6 +45,7 @@ def sort_eigenstates(energies: np.ndarray, states: np.ndarray) -> tuple[np.ndarr
     Args:
         energies (np.ndarray): 2D np array containing the eigenenergies, each row is a 1D array of eigenenergies under one condition
         states (np.ndarray): 3D np array containing the states, states[x, :, i] corresponds to energies[x, i]
+        assert_unique (bool): If True, assert that there are no duplicate eigenstates (default False)
     Returns:
         energies (np.ndarray): 2D np array containing the eigenenergies, each row is a 1D array of eigenenergies under one condition but the order in each row is sorted
         states (np.ndarray): 3D np array containing the states, in the same order as energies E[x, j] -> States[x, :, j]
@@ -55,7 +56,6 @@ def sort_eigenstates(energies: np.ndarray, states: np.ndarray) -> tuple[np.ndarr
     assert energies.shape[0] == states.shape[0] # assert the number of energies is the same as number of states
     assert energies.shape[1] == states.shape[2] # assert the number of energies is the same as number of states
 
-    ls = np.arange(states.shape[2], dtype="int")
     number_iterations = energies.shape[0]
 
     # This loop sorts the eigenstates such that they maintain some continuity. 
@@ -67,14 +67,10 @@ def sort_eigenstates(energies: np.ndarray, states: np.ndarray) -> tuple[np.ndarr
         orig_states = states[i, :, :].copy()
         orig_energies = energies[i, :].copy()
 
-        #insert location of maximums into array ls
-        np.argmax(np.abs(overlaps), axis=1, out=ls)
+        ls = np.argmax(np.abs(overlaps), axis=1) # save the location of maximums into array ls
 
-        print(np.unique(ls).shape)
-        print(ls)
-        assert np.unique(ls).shape == ls.shape # assert there's no duplicates in ls
-
-        # assert no overlap in ls numbers
+        if assert_unique:
+            assert np.unique(ls).shape == ls.shape # assert there's no duplicates in ls
 
         for k, l in enumerate(ls):
             if l!=k:
