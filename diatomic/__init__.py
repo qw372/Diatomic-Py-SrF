@@ -1,2 +1,3 @@
-from .hamiltonian import *
+from .hamiltonians import *
 from .constants import *
+from .evaluation import *

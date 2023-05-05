@@ -1,6 +1,6 @@
 # Diatomic-Py-SrF
 
-Adapted for SrF molecule.
+Adapted for SrF molecule. Optimized some code. Check original repo & paper for more info.
 
 <!-- Best practices:
 
@@ -11,3 +11,5 @@ Adapted for SrF molecule.
 TODO:
 
 1. complete Zeeman shift hamiltonian, check nuclear g factor
+2. implement ac Stark shift
+3. sort_smooth

@@ -367,7 +367,14 @@ def Zeeman_hamiltonian(Nmax: int, consts: MolecularConstants, Bfield: np.ndarray
     '''
     Calculate the Zeeman shift hamiltonian
     See John Barry's thesis Eq. 2.20 for details
-    TODO: John's thesis Eq. 2.20 is an incomplete version of the Zeeman shift, need to add more terms
+
+    TODO: John's thesis Eq. 2.20 is an incomplete version of the Zeeman shift, need to add more terms. 
+    Reference:
+        1. J. Mol. Spectrosc. 317 (2015) 1-9
+        2. arXiv:2302.14687v1
+        3. PhysRevResearch.2.013251
+        4. Eric's thesis
+        5. Brown & Carrington
 
     Args:
         Nmax (int) - Maximum rotational level to include
